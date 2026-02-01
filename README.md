@@ -2,7 +2,7 @@
 
 <div align="center">
 
-# Open-source IoT platform for data collection, processing, visualization, and device management.
+# Open-source IoT platform for data collection, processing, visualization, and device management aa.
 
 </div>
 <br>
