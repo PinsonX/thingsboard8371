@@ -31,9 +31,18 @@ jobs:
       - name: Start ThingsBoard using Docker
         run: |
           docker pull thingsboard/tb-postgres:latest
-          docker run -d --name thingsboard -p 8080:8080 thingsboard/tb-postgres:latest
+          docker run -d --name tb-postgres -p 5432:5432 thingsboard/tb-postgres:latest
+          docker pull thingsboard/tb:latest
+          docker run -d --name thingsboard -p 8080:8080 --link tb-postgres:tb-postgres thingsboard/tb:latest
 
       - name: Check ThingsBoard is running
         run: |
-          sleep 30  # attendre que TB démarre
+          sleep 60  # Increased sleep time to wait for ThingsBoard to start
           curl -f http://localhost:8080 || exit 1
+
+      - name: Clean up ThingsBoard container
+        run: |
+          docker stop thingsboard
+          docker rm thingsboard
+          docker stop tb-postgres
+          docker rm tb-postgres
