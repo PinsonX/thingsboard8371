@@ -13,29 +13,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Java 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
 
-    - name: Set up Maven
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
+      - name: Set up Maven
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
 
-    - name: Build and run unit tests
-      run: mvn clean install -DskipITs
+      - name: Build and run unit tests
+        run: mvn clean install -DskipITs
 
-    - name: Start ThingsBoard using Docker
-      run: |
-        docker pull thingsboard/tb-postgres:latest
-        docker run -d --name thingsboard -p 8080:8080 thingsboard/tb-postgres:latest
+      - name: Start ThingsBoard using Docker
+        run: |
+          docker pull thingsboard/tb-postgres:latest
+          docker run -d --name thingsboard -p 8080:8080 thingsboard/tb-postgres:latest
 
-    - name: Check ThingsBoard is running
-      run: |
-        sleep 30  # attendre que TB démarre
-        curl -f http://localhost:8080 || exit 1
+      - name: Check ThingsBoard is running
+        run: |
+          sleep 30  # attendre que TB démarre
+          curl -f http://localhost:8080 || exit 1
