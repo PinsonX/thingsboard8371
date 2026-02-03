@@ -34,11 +34,27 @@ jobs:
           docker run -d --name tb-postgres -p 5432:5432 thingsboard/tb-postgres:latest
           docker pull thingsboard/tb:latest
           docker run -d --name thingsboard -p 8080:8080 --link tb-postgres:tb-postgres thingsboard/tb:latest
+          # Wait a bit for containers to start
+          sleep 10
+          # Check if containers are running
+          docker ps -a
 
       - name: Check ThingsBoard is running
         run: |
-          sleep 60
-          curl -f http://localhost:8080 || exit 1
+          echo "Waiting for ThingsBoard to start..."
+          # Retry curl with exponential backoff
+          for i in {1..30}; do
+            if curl -f http://localhost:8080 > /dev/null 2>&1; then
+              echo "ThingsBoard is running!"
+              exit 0
+            fi
+            echo "Attempt $i failed, waiting 5 seconds..."
+            sleep 5
+          done
+          echo "ThingsBoard failed to start. Container logs:"
+          docker logs thingsboard
+          docker logs tb-postgres
+          exit 1
 
       - name: Clean up ThingsBoard container
         run: |
