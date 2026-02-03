@@ -41,7 +41,7 @@ jobs:
         run: sudo apt-get install maven
 
       - name: Build and run unit tests
-        run: mvn clean install -DskipITs -Dlicense.skip=true -pl common/util,common/data -am
+        run: mvn clean install -DskipITs
 
       - name: Start ThingsBoard using Docker
         run: |
