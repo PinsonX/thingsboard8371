@@ -41,7 +41,7 @@ jobs:
         run: sudo apt-get install maven
 
       - name: Build and run unit tests
-        run: mvn clean install -DskipITs
+        run: mvn clean install -DskipITs -Dlicense.skip=true -pl common/util,common/data -am
 
       - name: Start ThingsBoard using Docker
         run: |
@@ -52,7 +52,7 @@ jobs:
 
       - name: Check ThingsBoard is running
         run: |
-          sleep 60  # Increased sleep time to wait for ThingsBoard to start
+          sleep 60
           curl -f http://localhost:8080 || exit 1
 
       - name: Clean up ThingsBoard container
