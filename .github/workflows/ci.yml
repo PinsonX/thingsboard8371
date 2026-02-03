@@ -30,26 +30,41 @@ jobs:
 
       - name: Launch ThingsBoard
         run: |
-          # Pull and start ThingsBoard with PostgreSQL
           docker pull thingsboard/tb-postgres:latest
           docker run -d --name thingsboard -p 9090:9090 -p 1883:1883 thingsboard/tb-postgres:latest
           
-          # Wait for ThingsBoard to start
           echo "Waiting for ThingsBoard to start..."
-          sleep 30
           
-          # Verify container is running
+          MAX_ATTEMPTS=24
+          ATTEMPT=0
+          SUCCESS=false
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking if ThingsBoard is responding..."
+            
+            if curl -f http://localhost:9090 > /dev/null 2>&1; then
+              echo "ThingsBoard is running and accessible on port 9090"
+              SUCCESS=true
+              break
+            fi
+            
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              sleep 5
+            fi
+          done
+          
+          echo ""
+          echo "Container status:"
           docker ps -a
           echo ""
-          echo "ThingsBoard container logs:"
-          docker logs --tail 30 thingsboard
+          echo "ThingsBoard container logs (last 50 lines):"
+          docker logs --tail 50 thingsboard
           
-          # Simple check that ThingsBoard is responding
-          if curl -f http://localhost:9090 > /dev/null 2>&1; then
-            echo "✓ ThingsBoard is running and accessible on port 9090"
-          else
-            echo "⚠ ThingsBoard container is running but not yet responding on port 9090"
-            echo "This is normal during startup - the container may need more time to fully initialize"
+          if [ "$SUCCESS" = false ]; then
+            echo "ERROR: ThingsBoard failed to start after $MAX_ATTEMPTS attempts"
+            echo "The container may have crashed or failed to initialize properly"
+            exit 1
           fi
 
       - name: Clean up ThingsBoard
