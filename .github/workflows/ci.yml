@@ -25,8 +25,11 @@ jobs:
       - name: Install Maven
         run: sudo apt-get install maven
 
-      - name: Build and run unit tests
-        run: mvn clean install -DskipITs -Dlicense.skip=true -pl common/util,common/data -am
+      - name: Build full ThingsBoard (skip tests)
+        run: mvn clean install -DskipTests -DskipITs -Dlicense.skip=true
+
+      - name: Run unit tests for common modules only
+        run: mvn test -pl common/util,common/data -DskipITs -Dlicense.skip=true
 
       - name: Launch ThingsBoard
         run: |
