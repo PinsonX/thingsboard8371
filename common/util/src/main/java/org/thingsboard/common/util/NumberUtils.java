@@ -36,6 +36,10 @@ public class NumberUtils {
         return BigDecimal.valueOf(value).setScale(0, RoundingMode.HALF_UP).intValue();
     }
 
+    public static double clamp(double value, double min, double max) {
+    return Math.max(min, Math.min(max, value));
+    }
+
     public static Object roundResult(double value, Integer precision) {
         if (precision == null) {
             return value;

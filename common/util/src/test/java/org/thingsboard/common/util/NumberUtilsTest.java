@@ -58,4 +58,16 @@ public class NumberUtilsTest {
         assertThat(NumberUtils.roundResult(doubleVal, 2)).isEqualTo(1729.17);
     }
 
+    @Test
+    public void clamp() {
+        assertThat(NumberUtils.clamp(5.0, 0.0, 10.0)).isEqualTo(5.0);        
+        assertThat(NumberUtils.clamp(2.0, 5.0, 10.0)).isEqualTo(5.0);        
+        assertThat(NumberUtils.clamp(15.0, 0.0, 10.0)).isEqualTo(10.0);        
+        assertThat(NumberUtils.clamp(0.0, 0.0, 10.0)).isEqualTo(0.0);        
+        assertThat(NumberUtils.clamp(10.0, 0.0, 10.0)).isEqualTo(10.0);        
+        assertThat(NumberUtils.clamp(-5.0, -10.0, -1.0)).isEqualTo(-5.0);
+        assertThat(NumberUtils.clamp(-15.0, -10.0, -1.0)).isEqualTo(-10.0);
+        assertThat(NumberUtils.clamp(0.0, -10.0, -1.0)).isEqualTo(-1.0);
+    }
+
 }
