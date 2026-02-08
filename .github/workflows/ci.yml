@@ -57,6 +57,10 @@ jobs:
           # Run the locally built and tagged Docker image
           docker run -d --name thingsboard -p 9090:9090 -p 1883:1883 my-thingsboard:latest
           
+          # Wait 30 seconds for ThingsBoard to start
+          echo "Waiting 30 seconds for ThingsBoard to start..."
+          sleep 60
+          
           # Check if the container is running
           echo "Checking if ThingsBoard is running..."
           if docker ps -q -f name=thingsboard; then
