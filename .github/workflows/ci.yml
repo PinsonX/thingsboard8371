@@ -61,8 +61,10 @@ jobs:
           echo "Checking if ThingsBoard is running..."
           if docker ps -q -f name=thingsboard; then
             echo "ThingsBoard is running and accessible."
+            docker logs --tail 50 thingsboard            
           else
             echo "ERROR: ThingsBoard failed to start."
+            docker logs --tail 50 thingsboard
             exit 1
           fi
 
