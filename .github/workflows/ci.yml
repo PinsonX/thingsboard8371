@@ -47,6 +47,11 @@ jobs:
       - name: Run unit tests for common modules only
         run: mvn test -pl common/util,common/data -DskipITs -Dlicense.skip=true
 
+      - name: List built JAR files
+        run: |
+          echo "JAR files in application/target:"
+          ls -lh application/target/*.jar || echo "No JAR files found"
+
       - name: Build Docker image with ThingsBoard
         run: |
           # Build the Docker image using the locally built ThingsBoard

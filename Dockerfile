@@ -26,8 +26,8 @@ RUN groupadd -r thingsboard && useradd -r -g thingsboard thingsboard
 RUN mkdir -p ${DATA_FOLDER} /var/log/thingsboard && \
     chown -R thingsboard:thingsboard ${DATA_FOLDER} /var/log/thingsboard
 
-# Copy the built JAR file
-COPY application/target/thingsboard-*.jar /usr/share/thingsboard/bin/thingsboard.jar
+# Copy the built JAR file (Spring Boot creates a -boot.jar file)
+COPY application/target/thingsboard-*-boot.jar /usr/share/thingsboard/bin/thingsboard.jar
 
 # Set permissions
 RUN chmod 555 /usr/share/thingsboard/bin/thingsboard.jar && \
