@@ -1,19 +1,3 @@
-#
-# Copyright © 2016-2026 The Thingsboard Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
 name: CI ThingsBoard
 
 on:
@@ -39,7 +23,7 @@ jobs:
           distribution: "temurin"
 
       - name: Install Maven
-        run: sudo apt-get install maven
+        run: sudo apt-get update && sudo apt-get install -y maven
 
       - name: Build full ThingsBoard (skip tests)
         run: mvn clean install -DskipTests -DskipITs -Dlicense.skip=true
@@ -47,38 +31,53 @@ jobs:
       - name: Run unit tests for common modules only
         run: mvn test -pl common/util,common/data -DskipITs -Dlicense.skip=true
 
-      - name: List built JAR files
+      - name: Create Docker network
+        run: docker network create tb-net || true
+
+      - name: Start PostgreSQL
         run: |
-          echo "JAR files in application/target:"
-          ls -lh application/target/*.jar || echo "No JAR files found"
+          docker run -d \
+            --name tb-postgres \
+            --network tb-net \
+            -e POSTGRES_DB=thingsboard \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            postgres:14
 
       - name: Build Docker image with ThingsBoard
-        run: |
-          # Build the Docker image using the locally built ThingsBoard
-          docker build -t my-thingsboard:latest .
+        run: docker build -t my-thingsboard:latest .
 
       - name: Launch ThingsBoard
         run: |
-          # Run the locally built and tagged Docker image
-          docker run -d --name thingsboard -p 9090:9090 -p 1883:1883 my-thingsboard:latest
-          
-          # Wait 30 seconds for ThingsBoard to start
-          echo "Waiting 30 seconds for ThingsBoard to start..."
-          sleep 60
-          
-          # Check if the container is running
-          echo "Checking if ThingsBoard is running..."
-          if docker ps -q -f name=thingsboard; then
-            echo "ThingsBoard is running and accessible."
-            docker logs --tail 50 thingsboard            
-          else
-            echo "ERROR: ThingsBoard failed to start."
-            docker logs --tail 50 thingsboard
-            exit 1
-          fi
+          docker run -d \
+            --name thingsboard \
+            --network tb-net \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://tb-postgres:5432/thingsboard \
+            -e SPRING_DATASOURCE_USERNAME=postgres \
+            -e SPRING_DATASOURCE_PASSWORD=postgres \
+            -p 9090:9090 \
+            -p 1883:1883 \
+            my-thingsboard:latest
 
-      - name: Clean up ThingsBoard
+      - name: Wait for ThingsBoard to start
+        run: |
+          echo "Waiting for ThingsBoard to initialize..."
+          for i in {1..20}; do
+            if docker logs thingsboard | grep -q "Started ThingsBoardApplication"; then
+              echo "ThingsBoard started successfully"
+              docker logs --tail 200 thingsboard
+              exit 0
+            fi
+            echo "Still starting... ($i/20)"
+            sleep 15
+          done
+
+          echo "ERROR: ThingsBoard did not start in time"
+          docker logs --tail 200 thingsboard
+          exit 1
+
+      - name: Clean up containers
         if: always()
         run: |
-          docker stop thingsboard || true
-          docker rm thingsboard || true
+          docker rm -f thingsboard || true
+          docker rm -f tb-postgres || true

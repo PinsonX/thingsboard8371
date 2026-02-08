@@ -14,36 +14,21 @@
 # limitations under the License.
 #
 
-FROM eclipse-temurin:17-jre
+# Base on the official ThingsBoard PostgreSQL image
+FROM thingsboard/tb-postgres:latest
 
-ENV DATA_FOLDER=/data
-ENV HTTP_BIND_PORT=9090
+# Switch to root to modify files
+USER root
 
-# Create thingsboard user
-RUN groupadd -r thingsboard && useradd -r -g thingsboard thingsboard
+# Replace the ThingsBoard server JAR with your forked build
+COPY application/target/thingsboard-4.4.0-SNAPSHOT-boot.jar \
+     /usr/share/thingsboard/bin/thingsboard.jar
 
-# Create necessary directories
-RUN mkdir -p ${DATA_FOLDER} /var/log/thingsboard && \
-    chown -R thingsboard:thingsboard ${DATA_FOLDER} /var/log/thingsboard
+# Fix ownership (ThingsBoard does not run as root)
+RUN chown thingsboard:thingsboard /usr/share/thingsboard/bin/thingsboard.jar
 
-# Copy the built JAR file (Spring Boot creates a -boot.jar file)
-COPY application/target/thingsboard-*-boot.jar /usr/share/thingsboard/bin/thingsboard.jar
-
-# Set permissions
-RUN chmod 555 /usr/share/thingsboard/bin/thingsboard.jar && \
-    chown thingsboard:thingsboard /usr/share/thingsboard/bin/thingsboard.jar
-
+# Switch back to the thingsboard user
 USER thingsboard
 
-WORKDIR /usr/share/thingsboard
-
-EXPOSE 9090
-EXPOSE 1883
-EXPOSE 5683/udp
-EXPOSE 5685/udp
-EXPOSE 5686/udp
-
-VOLUME ["/data"]
-
-# Run ThingsBoard
-ENTRYPOINT ["java", "-jar", "/usr/share/thingsboard/bin/thingsboard.jar"]
+# Expose required ports
+EXPOSE 9090 1883
