@@ -43,18 +43,12 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Verify installations
-        run: |
-          java -version
-          mvn -version
-          docker --version
-
       - name: Build ThingsBoard
         run: |
           MAVEN_OPTS="-Xmx1024m" NODE_OPTIONS="--max_old_space_size=4096" \
           mvn -T2 license:format clean install -DskipTests -DskipITs -Dlicense.skip=true
       
-      - name: Run unit tests for common modules only
+      - name: Run unit tests
         run: mvn test -pl common/util,common/data -DskipITs -Dlicense.skip=true
 
       - name: Wait for PostgreSQL
@@ -88,7 +82,7 @@ jobs:
             --spring.datasource.url=jdbc:postgresql://localhost:5432/thingsboard \
             --spring.datasource.username=postgres \
             --spring.datasource.password=postgres &
-          sleep 60  # wait for ThingsBoard to fully start
+          sleep 60 
 
       - name: Verify ThingsBoard
         run: |
