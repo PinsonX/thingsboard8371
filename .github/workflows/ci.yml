@@ -3,7 +3,7 @@ name: CI ThingsBoard
 on:
   push:
     paths:
-      - '**'   # Trigger on changes in any file
+      - '**'
   pull_request:
     paths:
       - '**'
@@ -11,6 +11,7 @@ on:
 jobs:
   build-and-run:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:15
@@ -30,13 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Set up Maven 3
+      - name: Set up Java 17 + Maven cache
         uses: actions/setup-java@v3
         with:
           distribution: temurin
@@ -47,21 +42,23 @@ jobs:
         run: |
           MAVEN_OPTS="-Xmx1024m" NODE_OPTIONS="--max_old_space_size=4096" \
           mvn -T2 license:format clean install -DskipTests -DskipITs -Dlicense.skip=true
-      
+
       - name: Run unit tests
         run: mvn test -pl common/util,common/data -DskipITs -Dlicense.skip=true
 
-      - name: Wait for PostgreSQL
+      - name: Wait for PostgreSQL (fail if unavailable)
         run: |
           echo "Waiting for PostgreSQL to be ready..."
           for i in {1..10}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then
+            if pg_isready -h localhost -p 5432 -U postgres -d thingsboard; then
               echo "PostgreSQL is ready"
-              break
+              exit 0
             fi
             echo "Waiting 5 seconds..."
             sleep 5
           done
+          echo "PostgreSQL did not become ready in time"
+          exit 1
 
       - name: Initialize Database Schema
         run: |
@@ -82,10 +79,19 @@ jobs:
             --spring.datasource.url=jdbc:postgresql://localhost:5432/thingsboard \
             --spring.datasource.username=postgres \
             --spring.datasource.password=postgres &
-          sleep 60 
+          
+          TB_PID=$!
+          sleep 30
+
+          if ! kill -0 $TB_PID 2>/dev/null; then
+            echo "Process exited early"
+            exit 1
+          fi
+
+          echo "ThingsBoard is running"
 
       - name: Verify ThingsBoard
         run: |
-          echo "ThingsBoard should be running on http://localhost:8080"
-          curl --retry 5 --retry-delay 10 --retry-connrefused http://localhost:8080 || echo "Cannot reach ThingsBoard yet"
-
+          echo "Checking ThingsBoard on http://localhost:8080"
+          curl --fail --retry 5 --retry-delay 10 --retry-connrefused \
+            http://localhost:8080
